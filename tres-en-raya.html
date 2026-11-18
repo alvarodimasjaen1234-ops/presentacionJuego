@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b18">
+<meta name="description" content="Tres en Raya contra una IA con tres niveles de dificultad. HTML, CSS y JavaScript vanilla en un solo archivo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1324'/%3E%3Cpath d='M14 14l20 20M34 14L14 34' stroke='%233ee6ff' stroke-width='7' stroke-linecap='round'/%3E%3Ccircle cx='47' cy='47' r='9' stroke='%23ff5f9e' stroke-width='6' fill='none'/%3E%3C/svg%3E">
+<title>Tres en Raya · Tú vs IA</title>
+<style>
+  /* ============================================================
+     1. Tokens de diseño
+     ============================================================ */
+  :root {
+    color-scheme: dark;
+    --fondo: #070b18;
+    --panel: rgba(255, 255, 255, .045);
+    --panel-fuerte: rgba(255, 255, 255, .075);
+    --borde: rgba(255, 255, 255, .09);
+    --borde-fuerte: rgba(255, 255, 255, .16);
+    --texto: #eaf0ff;
+    --texto-suave: #93a3c4;
+    --x: #3ee6ff;
+    --x-brillo: rgba(62, 230, 255, .45);
+    --o: #ff5f9e;
+    --o-brillo: rgba(255, 95, 158, .45);
+    --acento: #7c5cff;
+    --ok: #3ddc97;
+    --aviso: #ffc857;
+    --radio: 18px;
+    --sombra: 0 26px 60px -30px rgba(0, 0, 0, .95);
+    --fuente: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { min-height: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 32px) 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--fuente);
+    color: var(--texto);
+    background:
+      radial-gradient(900px 620px at 12% -12%, rgba(124, 92, 255, .30), transparent 62%),
+      radial-gradient(760px 520px at 102% 2%, rgba(62, 230, 255, .16), transparent 58%),
+      radial-gradient(900px 700px at 50% 118%, rgba(255, 95, 158, .13), transparent 62%),
+      var(--fondo);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  .app { width: 100%; max-width: 900px; }
+
+  /* ============================================================
+     2. Cabecera
+     ============================================================ */
+  .cabecera { text-align: center; margin: 0 0 clamp(18px, 3vw, 26px); }
+
+  .insignia {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 6px 14px;
+    border: 1px solid var(--borde-fuerte);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .04);
+    color: var(--texto-suave);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .insignia::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 10px var(--ok);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3.1rem);
+    line-height: 1.05;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    background: linear-gradient(120deg, #ffffff 10%, var(--x) 55%, var(--acento) 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subtitulo {
+    margin: 10px auto 0;
+    max-width: 44ch;
+    color: var(--texto-suave);
+    font-size: clamp(.88rem, 2.2vw, .98rem);
+    line-height: 1.55;
+  }
+
+  .subtitulo strong { color: var(--x); font-weight: 700; }
+
+  /* ============================================================
+     3. Marcador
+     ============================================================ */
+  .marcador {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto clamp(18px, 3vw, 26px);
+  }
+
+  .marcador-caja {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 10px 14px;
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+
+  .marcador-caja::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--borde-fuerte);
+  }
+
+  .marcador-caja.tu::before { background: linear-gradient(90deg, transparent, var(--x), transparent); }
+  .marcador-caja.ia::before { background: linear-gradient(90deg, transparent, var(--o), transparent); }
+  .marcador-caja.empates::before { background: linear-gradient(90deg, transparent, var(--aviso), transparent); }
+
+  .marcador-rol {
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+    white-space: nowrap;
+  }
+
+  .marcador-puntos {
+    display: inline-block;
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .marcador-caja.tu .marcador-puntos { color: var(--x); }
+  .marcador-caja.ia .marcador-puntos { color: var(--o); }
+  .marcador-caja.empates .marcador-puntos { color: var(--aviso); }
+
+  /* ============================================================
+     4. Distribución principal
+     ============================================================ */
+  .panel-juego {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: clamp(16px, 3vw, 26px);
+    align-items: start;
+  }
+
+  .columna-tablero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .columna-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  /* ============================================================
+     5. Estado del turno
+     ============================================================ */
+  .estado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 20px;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--texto);
+    font-size: clamp(.88rem, 2.4vw, .98rem);
+    font-weight: 600;
+    letter-spacing: .01em;
+    text-align: center;
+    transition: border-color .3s ease, background .3s ease, color .3s ease;
+  }
+
+  .estado .punto {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--x);
+    box-shadow: 0 0 12px var(--x-brillo);
+    transition: background .3s ease, box-shadow .3s ease;
+  }
+
+  .estado[data-estado="pensando"] { border-color: rgba(255, 95, 158, .35); background: rgba(255, 95, 158, .08); }
+  .estado[data-estado="pensando"] .punto {
+    background: var(--o);
+    box-shadow: 0 0 14px var(--o-brillo);
+    animation: latido 1s ease-in-out infinite;
+  }
+
+  .estado[data-estado="victoria"] { border-color: rgba(61, 220, 151, .45); background: rgba(61, 220, 151, .10); color: #d6fff0; }
+  .estado[data-estado="victoria"] .punto { background: var(--ok); box-shadow: 0 0 14px rgba(61, 220, 151, .7); }
+
+  .estado[data-estado="derrota"] { border-color: rgba(255, 95, 158, .45); background: rgba(255, 95, 158, .10); color: #ffd9e6; }
+  .estado[data-estado="derrota"] .punto { background: var(--o); box-shadow: 0 0 14px var(--o-brillo); }
+
+  .estado[data-estado="empate"] { border-color: rgba(255, 200, 87, .45); background: rgba(255, 200, 87, .10); color: #ffefc9; }
+  .estado[data-estado="empate"] .punto { background: var(--aviso); box-shadow: 0 0 14px rgba(255, 200, 87, .6); }
+
+  /* ============================================================
+     6. Tablero
+     ============================================================ */
+  .tablero {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(8px, 2.2vw, 12px);
+    width: min(100%, 420px);
+    aspect-ratio: 1 / 1;
+    padding: clamp(8px, 2.2vw, 12px);
+    border: 1px solid var(--borde-fuerte);
+    border-radius: 26px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .015));
+    box-shadow: var(--sombra), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .tablero::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px transparent;
+    transition: box-shadow .35s ease;
+  }
+
+  .tablero[data-bloqueado="true"]::after { box-shadow: 0 0 0 1px rgba(255, 95, 158, .22); }
+
+  .casilla {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, .07);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #111a33, #0b1324);
+    color: var(--texto);
+    font: inherit;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .16s ease, background .22s ease, border-color .22s ease,
+                box-shadow .22s ease, opacity .3s ease;
+  }
+
+  .casilla:hover:not(:disabled)::after {
+    content: "X";
+    color: rgba(62, 230, 255, .16);
+    font-size: clamp(2.1rem, 11vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .casilla:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(62, 230, 255, .38);
+    background: linear-gradient(180deg, #16224a, #0f1932);
+    box-shadow: 0 12px 26px -14px rgba(62, 230, 255, .8);
+  }
+
+  .casilla:active:not(:disabled) { transform: translateY(0) scale(.975); }
+
+  .casilla:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 3px;
+    border-radius: 16px;
+  }
+
+  .casilla:disabled { opacity: 1; cursor: default; }
+
+  .casilla.ocupada { cursor: default; }
+
+  .casilla.ganadora {
+    border-color: rgba(61, 220, 151, .55);
+    background: linear-gradient(180deg, rgba(61, 220, 151, .20), rgba(61, 220, 151, .05));
+    animation: destacar 1.15s ease-in-out 2 alternate;
+  }
+
+  .tablero.con-ganador .casilla:not(.ganadora) { opacity: .55; }
+
+  /* Fichas dibujadas con SVG (animación de trazo) */
+  .marca { width: 60%; height: 60%; overflow: visible; }
+
+  .marca line,
+  .marca circle {
+    fill: none;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .marca-x line {
+    stroke: var(--x);
+    stroke-dasharray: 80;
+    stroke-dashoffset: 80;
+    animation: trazar .3s cubic-bezier(.5, 0, .9, .4) forwards;
+    filter: drop-shadow(0 0 9px rgba(62, 230, 255, .55));
+  }
+
+  .marca-x line:nth-child(2) { animation-delay: .09s; }
+
+  .marca-o circle {
+    stroke: var(--o);
+    stroke-dasharray: 150;
+    stroke-dashoffset: 150;
+    animation: trazar .42s cubic-bezier(.5, 0, .9, .4) forwards;
+    filter: drop-shadow(0 0 9px rgba(255, 95, 158, .55));
+  }
+
+  /* ============================================================
+     7. Tarjetas laterales
+     ============================================================ */
+  .tarjeta {
+    padding: 16px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+  }
+
+  .dificultad { margin: 0; padding: 0; border: 0; min-width: 0; }
+
+  .dificultad legend {
+    padding: 0;
+    margin-bottom: 10px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+  }
+
+  .opciones {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, .28);
+  }
+
+  .opcion { position: relative; display: block; min-width: 0; }
+
+  .opcion input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .opcion span {
+    display: grid;
+    place-items: center;
+    padding: 9px 2px;
+    border-radius: 10px;
+    color: var(--texto-suave);
+    font-size: clamp(.7rem, 2.1vw, .8rem);
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+
+  .opcion span:hover { color: var(--texto); background: rgba(255, 255, 255, .06); }
+
+  .opcion input:checked + span {
+    color: #06101f;
+    background: linear-gradient(135deg, #a99bff, var(--x));
+    box-shadow: 0 8px 18px -10px rgba(62, 230, 255, .95);
+  }
+
+  .opcion input:focus-visible + span {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .dificultad-desc {
+    min-height: 3.9em;
+    margin: 10px 0 0;
+    color: var(--texto-suave);
+    font-size: .78rem;
+    line-height: 1.55;
+  }
+
+  .acciones { display: flex; flex-direction: column; gap: 9px; }
+
+  .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .16s ease, filter .2s ease, background .2s ease, border-color .2s ease;
+  }
+
+  .boton:active { transform: scale(.985); }
+
+  .boton:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+
+  .boton.primario {
+    color: #050d1c;
+    background: linear-gradient(135deg, #a99bff, var(--x));
+    box-shadow: 0 14px 30px -18px rgba(62, 230, 255, .95);
+  }
+
+  .boton.primario:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+  .boton.secundario {
+    color: var(--texto);
+    background: rgba(255, 255, 255, .05);
+    border-color: var(--borde);
+  }
+
+  .boton.secundario:hover { background: rgba(255, 255, 255, .10); border-color: var(--borde-fuerte); }
+
+  .boton-sonido[aria-pressed="false"] { color: var(--texto-suave); }
+
+  .icono { flex: none; width: 18px; height: 18px; }
+
+  .boton-sonido .tachado { display: none; }
+
+  .boton-sonido[aria-pressed="false"] .ondas { display: none; }
+  .boton-sonido[aria-pressed="false"] .tachado { display: block; }
+
+  .pista-titulo {
+    margin: 0 0 8px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+  }
+
+  .pista-lista {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--texto-suave);
+    font-size: .8rem;
+    line-height: 1.65;
+  }
+
+  .pista-lista li + li { margin-top: 4px; }
+
+  .pista-lista strong { color: var(--texto); }
+
+  .pie {
+    margin: clamp(22px, 4vw, 34px) 0 0;
+    color: rgba(147, 163, 196, .72);
+    font-size: .74rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ============================================================
+     8. Animaciones
+     ============================================================ */
+  @keyframes trazar { to { stroke-dashoffset: 0; } }
+
+  @keyframes latido {
+    0%, 100% { transform: scale(1); opacity: .7; }
+    50% { transform: scale(1.45); opacity: 1; }
+  }
+
+  @keyframes destacar {
+    from { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0); }
+    to { box-shadow: 0 0 26px 0 rgba(61, 220, 151, .45); }
+  }
+
+  @keyframes rebote {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.38); color: #ffffff; }
+    100% { transform: scale(1); }
+  }
+
+  .rebote { animation: rebote .45s cubic-bezier(.4, 0, .5, 2); }
+
+  /* ============================================================
+     9. Responsive y accesibilidad
+     ============================================================ */
+  @media (max-width: 820px) {
+    .panel-juego { grid-template-columns: 1fr; }
+    .columna-lateral { width: 100%; max-width: 420px; margin: 0 auto; }
+    .tablero { width: min(100%, 400px); }
+  }
+
+  @media (max-width: 380px) {
+    .marcador { gap: 7px; }
+    .marcador-caja { padding: 10px 4px 12px; }
+    .marcador-rol { font-size: .6rem; letter-spacing: .08em; }
+    .tarjeta { padding: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header class="cabecera">
+    <p class="insignia">1 vs IA</p>
+    <h1>Tres en Raya</h1>
+    <p class="subtitulo">
+      Tú juegas con <strong>X</strong> y siempre empiezas.
+      Consigue tres en línea antes que la máquina.
+    </p>
+  </header>
+
+  <section class="marcador" aria-label="Marcador de la sesión">
+    <div class="marcador-caja tu">
+      <span class="marcador-rol">Tú · X</span>
+      <strong class="marcador-puntos" id="marcador-x">0</strong>
+    </div>
+    <div class="marcador-caja empates">
+      <span class="marcador-rol">Empates</span>
+      <strong class="marcador-puntos" id="marcador-empates">0</strong>
+    </div>
+    <div class="marcador-caja ia">
+      <span class="marcador-rol">IA · O</span>
+      <strong class="marcador-puntos" id="marcador-o">0</strong>
+    </div>
+  </section>
+
+  <div class="panel-juego">
+    <div class="columna-tablero">
+      <div id="estado" class="estado" data-estado="turno" role="status" aria-live="polite" aria-atomic="true">
+        <span class="punto" aria-hidden="true"></span>
+        <span id="estado-texto">Tu turno (X)</span>
+      </div>
+
+      <div id="tablero" class="tablero" role="group" aria-label="Tablero de tres en raya" data-bloqueado="false">
+        <button class="casilla" type="button" data-i="0" aria-label="Casilla 1, vacía"></button>
+        <button class="casilla" type="button" data-i="1" aria-label="Casilla 2, vacía"></button>
+        <button class="casilla" type="button" data-i="2" aria-label="Casilla 3, vacía"></button>
+        <button class="casilla" type="button" data-i="3" aria-label="Casilla 4, vacía"></button>
+        <button class="casilla" type="button" data-i="4" aria-label="Casilla 5, vacía"></button>
+        <button class="casilla" type="button" data-i="5" aria-label="Casilla 6, vacía"></button>
+        <button class="casilla" type="button" data-i="6" aria-label="Casilla 7, vacía"></button>
+        <button class="casilla" type="button" data-i="7" aria-label="Casilla 8, vacía"></button>
+        <button class="casilla" type="button" data-i="8" aria-label="Casilla 9, vacía"></button>
+      </div>
+    </div>
+
+    <aside class="columna-lateral">
+      <section class="tarjeta">
+        <fieldset class="dificultad">
+          <legend>Dificultad de la IA</legend>
+          <div class="opciones">
+            <label class="opcion">
+              <input type="radio" name="dificultad" value="facil">
+              <span>Fácil</span>
+            </label>
+            <label class="opcion">
+              <input type="radio" name="dificultad" value="normal" checked>
+              <span>Normal</span>
+            </label>
+            <label class="opcion">
+              <input type="radio" name="dificultad" value="imbatible">
+              <span>Imbatible</span>
+            </label>
+          </div>
+        </fieldset>
+        <p class="dificultad-desc" id="dificultad-desc"></p>
+      </section>
+
+      <section class="tarjeta acciones" aria-label="Acciones de la partida">
+        <button id="btn-nueva" class="boton primario" type="button">Nueva partida</button>
+        <button id="btn-marcador" class="boton secundario" type="button">Reiniciar marcador</button>
+        <button id="btn-sonido" class="boton secundario boton-sonido" type="button" aria-pressed="true" title="Silenciar sonidos">
+          <svg class="icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 9.2h3.6L12.8 5v14l-5.2-4.2H4z" fill="currentColor"/>
+            <g class="ondas" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M16 8.5a4.8 4.8 0 0 1 0 7"/>
+              <path d="M18.6 6a8.4 8.4 0 0 1 0 12"/>
+            </g>
+            <g class="tachado" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <path d="M16.5 8.5l5 7"/>
+              <path d="M21.5 8.5l-5 7"/>
+            </g>
+          </svg>
+          <span id="sonido-texto">Sonido</span>
+        </button>
+      </section>
+
+      <section class="tarjeta">
+        <h2 class="pista-titulo">Cómo se juega</h2>
+        <ul class="pista-lista">
+          <li>Las <strong>X</strong> son tuyas y abren cada ronda.</li>
+          <li>La IA «piensa» medio segundo antes de mover.</li>
+          <li>Gana quien alinee tres fichas en fila, columna o diagonal.</li>
+          <li>Si se llena el tablero, es empate.</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="pie">
+    HTML + CSS + JavaScript vanilla · Sin dependencias externas<br>
+    El marcador se guarda en este navegador.
+  </footer>
+</main>
+
+<noscript>
+  <p style="text-align:center;color:#eaf0ff;font-family:sans-serif;">
+    Necesitas activar JavaScript para jugar a Tres en Raya.
+  </p>
+</noscript>
+
+<!-- ============================================================
+     Núcleo lógico puro (sin DOM) — testeable de forma aislada
+     ============================================================ -->
+<script id="nucleo-logica">
+'use strict';
+
+/* Las 8 combinaciones ganadoras: 3 filas, 3 columnas y 2 diagonales. */
+const LINEAS_GANADORAS = Object.freeze([
+  Object.freeze([0, 1, 2]),
+  Object.freeze([3, 4, 5]),
+  Object.freeze([6, 7, 8]),
+  Object.freeze([0, 3, 6]),
+  Object.freeze([1, 4, 7]),
+  Object.freeze([2, 5, 8]),
+  Object.freeze([0, 4, 8]),
+  Object.freeze([2, 4, 6])
+]);
+
+const FICHA_HUMANO = 'X';
+const FICHA_IA = 'O';
+
+const DIFICULTADES = Object.freeze({
+  facil: Object.freeze({ etiqueta: 'Fácil' }),
+  normal: Object.freeze({ etiqueta: 'Normal' }),
+  imbatible: Object.freeze({ etiqueta: 'Imbatible' })
+});
+
+/** Devuelve un tablero vacío de 9 casillas. */
+function crearTablero() {
+  return [null, null, null, null, null, null, null, null, null];
+}
+
+/** true si el tablero es un array válido de 9 posiciones. */
+function esTableroValido(tablero) {
+  return Array.isArray(tablero) && tablero.length === 9;
+}
+
+/**
+ * Devuelve la línea ganadora ([a, b, c]) o null si no hay ningún tres en raya.
+ */
+function obtenerLineaGanadora(tablero) {
+  if (!esTableroValido(tablero)) return null;
+
+  for (let i = 0; i < LINEAS_GANADORAS.length; i += 1) {
+    const [a, b, c] = LINEAS_GANADORAS[i];
+    if (tablero[a] && tablero[a] === tablero[b] && tablero[b] === tablero[c]) {
+      return LINEAS_GANADORAS[i];
+    }
+  }
+  return null;
+}
+
+/** true si las 9 casillas están ocupadas. */
+function tableroCompleto(tablero) {
+  if (!esTableroValido(tablero)) return false;
+  return tablero.every((casilla) => casilla !== null && casilla !== '');
+}
+
+/** Índices de las casillas vacías. */
+function casillasVacias(tablero) {
+  if (!esTableroValido(tablero)) return [];
+  const vacias = [];
+  for (let i = 0; i < tablero.length; i += 1) {
+    if (tablero[i] === null || tablero[i] === '') vacias.push(i);
+  }
+  return vacias;
+}
+
+/** Elige un elemento al azar de una lista no vacía. */
+function elegirAlAzar(lista, rng) {
+  if (!lista.length) return null;
+  const azar = typeof rng === 'function' ? rng() : Math.random();
+  const indice = Math.min(lista.length - 1, Math.floor(azar * lista.length));
+  return lista[indice];
+}
+
+/**
+ * Busca una casilla que dé la victoria inmediata a `ficha`.
+ * Devuelve el índice o null. Restaura el tablero antes de salir.
+ */
+function buscarJugadaGanadora(tablero, ficha) {
+  for (const indice of casillasVacias(tablero)) {
+    tablero[indice] = ficha;
+    const gana = obtenerLineaGanadora(tablero) !== null;
+    tablero[indice] = null;
+    if (gana) return indice;
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------
+   IA · Nivel fácil: aleatoria, con remate ocasional.
+   ------------------------------------------------------------ */
+function elegirJugadaFacil(tablero, fichaIA = FICHA_IA, fichaHumano = FICHA_HUMANO, rng = Math.random) {
+  const vacias = casillasVacias(tablero);
+  if (!vacias.length) return null;
+
+  if (rng() < 0.35) {
+    const remate = buscarJugadaGanadora(tablero, fichaIA);
+    if (remate !== null) return remate;
+  }
+  return elegirAlAzar(vacias, rng);
+}
+
+/* ------------------------------------------------------------
+   IA · Nivel normal: remata y bloquea amenazas simples; el resto
+   es aleatorio (por eso un humano que crea una horquilla gana).
+   ------------------------------------------------------------ */
+function elegirJugadaNormal(tablero, fichaIA = FICHA_IA, fichaHumano = FICHA_HUMANO, rng = Math.random) {
+  const vacias = casillasVacias(tablero);
+  if (!vacias.length) return null;
+
+  const remate = buscarJugadaGanadora(tablero, fichaIA);
+  if (remate !== null) return remate;
+
+  const bloqueo = buscarJugadaGanadora(tablero, fichaHumano);
+  if (bloqueo !== null) return bloqueo;
+
+  return elegirAlAzar(vacias, rng);
+}
+
+/* ------------------------------------------------------------
+   IA · Nivel imbatible: Minimax con poda alfa-beta.
+   Puntuación: +10 - profundidad si gana la IA, -10 + profundidad
+   si gana el humano (premia ganar rápido y perder tarde), 0 empate.
+   ------------------------------------------------------------ */
+function minimax(tablero, profundidad, esTurnoIA, alfa, beta, fichaIA, fichaHumano) {
+  const linea = obtenerLineaGanadora(tablero);
+  if (linea) {
+    return tablero[linea[0]] === fichaIA ? 10 - profundidad : profundidad - 10;
+  }
+  if (tableroCompleto(tablero)) return 0;
+
+  const vacias = casillasVacias(tablero);
+
+  if (esTurnoIA) {
+    let mejor = -Infinity;
+    for (const indice of vacias) {
+      tablero[indice] = fichaIA;
+      const valor = minimax(tablero, profundidad + 1, false, alfa, beta, fichaIA, fichaHumano);
+      tablero[indice] = null;
+      if (valor > mejor) mejor = valor;
+      if (mejor > alfa) alfa = mejor;
+      if (beta <= alfa) break;
+    }
+    return mejor;
+  }
+
+  let mejor = Infinity;
+  for (const indice of vacias) {
+    tablero[indice] = fichaHumano;
+    const valor = minimax(tablero, profundidad + 1, true, alfa, beta, fichaIA, fichaHumano);
+    tablero[indice] = null;
+    if (valor < mejor) mejor = valor;
+    if (mejor < beta) beta = mejor;
+    if (beta <= alfa) break;
+  }
+  return mejor;
+}
+
+/** Devuelve la jugada óptima (desempate aleatorio entre jugadas equivalentes). */
+function elegirJugadaMinimax(tablero, fichaIA = FICHA_IA, fichaHumano = FICHA_HUMANO, rng = Math.random) {
+  const vacias = casillasVacias(tablero);
+  if (!vacias.length) return null;
+
+  let mejorPuntuacion = -Infinity;
+  let mejoresJugadas = [];
+
+  for (const indice of vacias) {
+    tablero[indice] = fichaIA;
+    const puntuacion = minimax(tablero, 1, false, -Infinity, Infinity, fichaIA, fichaHumano);
+    tablero[indice] = null;
+
+    if (puntuacion > mejorPuntuacion) {
+      mejorPuntuacion = puntuacion;
+      mejoresJugadas = [indice];
+    } else if (puntuacion === mejorPuntuacion) {
+      mejoresJugadas.push(indice);
+    }
+  }
+
+  return elegirAlAzar(mejoresJugadas, rng);
+}
+
+/** Punto de entrada de la IA: elige el motor según la dificultad. */
+function elegirJugada(tablero, dificultad = 'normal', fichaIA = FICHA_IA, fichaHumano = FICHA_HUMANO, rng = Math.random) {
+  if (!esTableroValido(tablero)) return null;
+  if (obtenerLineaGanadora(tablero) || tableroCompleto(tablero)) return null;
+
+  switch (dificultad) {
+    case 'facil':
+      return elegirJugadaFacil(tablero, fichaIA, fichaHumano, rng);
+    case 'imbatible':
+      return elegirJugadaMinimax(tablero, fichaIA, fichaHumano, rng);
+    case 'normal':
+    default:
+      return elegirJugadaNormal(tablero, fichaIA, fichaHumano, rng);
+  }
+}
+
+/* API de depuración accesible desde la consola del navegador. */
+if (typeof window !== 'undefined') {
+  window.TresEnRayaCore = Object.freeze({
+    LINEAS_GANADORAS,
+    DIFICULTADES,
+    FICHA_HUMANO,
+    FICHA_IA,
+    crearTablero,
+    esTableroValido,
+    obtenerLineaGanadora,
+    tableroCompleto,
+    casillasVacias,
+    buscarJugadaGanadora,
+    elegirJugada,
+    elegirJugadaFacil,
+    elegirJugadaNormal,
+    elegirJugadaMinimax,
+    minimax
+  });
+}
+</script>
+
+<!-- ============================================================
+     Capa de interfaz y estado de la partida
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Constantes de presentación ---------- */
+  const SVGS = {
+    X: '<svg class="marca marca-x" viewBox="0 0 100 100" aria-hidden="true" focusable="false">' +
+       '<line x1="28" y1="28" x2="72" y2="72"></line>' +
+       '<line x1="72" y1="28" x2="28" y2="72"></line></svg>',
+    O: '<svg class="marca marca-o" viewBox="0 0 100 100" aria-hidden="true" focusable="false">' +
+       '<circle cx="50" cy="50" r="23"></circle></svg>'
+  };
+
+  const TEXTOS_DIFICULTAD = {
+    facil: 'Juega al azar y remata de vez en cuando. Perfecta para calentar y ganar tus primeras rondas.',
+    normal: 'Remata sus victorias y bloquea las tuyas, pero el resto lo juega al azar. Si creas una doble amenaza, puedes ganar.',
+    imbatible: 'Minimax con poda alfa-beta: siempre elige la jugada óptima. Lo máximo que puedes rascar es un empate.'
+  };
+
+  const RETARDO_MIN_IA = 420;
+  const RETARDO_MAX_IA = 620;
+  const CLAVE_ALMACEN = 'tresEnRaya.v1';
+
+  const SONIDOS = {
+    x: [{ f: 660, t: 0, d: 0.10, v: 0.05 }],
+    o: [{ f: 440, t: 0, d: 0.11, v: 0.05 }],
+    interfaz: [{ f: 520, t: 0, d: 0.07, v: 0.035 }],
+    reinicio: [{ f: 330, t: 0, d: 0.08, v: 0.04 }, { f: 495, t: 0.08, d: 0.10, v: 0.04 }],
+    victoria: [
+      { f: 523.25, t: 0, d: 0.15, v: 0.06 },
+      { f: 659.25, t: 0.13, d: 0.15, v: 0.06 },
+      { f: 783.99, t: 0.26, d: 0.24, v: 0.07 }
+    ],
+    derrota: [
+      { f: 392, t: 0, d: 0.16, v: 0.06 },
+      { f: 293.66, t: 0.15, d: 0.30, v: 0.06 }
+    ],
+    empate: [
+      { f: 349.23, t: 0, d: 0.14, v: 0.05 },
+      { f: 349.23, t: 0.18, d: 0.22, v: 0.05 }
+    ]
+  };
+
+  const HUMANO = FICHA_HUMANO;
+  const IA = FICHA_IA;
+
+  /* ---------- Referencias al DOM (una sola vez) ---------- */
+  const tableroEl = document.getElementById('tablero');
+  const celdas = Array.from(document.querySelectorAll('.casilla'));
+  const estadoEl = document.getElementById('estado');
+  const estadoTexto = document.getElementById('estado-texto');
+  const marcadorEls = {
+    x: document.getElementById('marcador-x'),
+    empates: document.getElementById('marcador-empates'),
+    o: document.getElementById('marcador-o')
+  };
+  const btnNueva = document.getElementById('btn-nueva');
+  const btnMarcador = document.getElementById('btn-marcador');
+  const btnSonido = document.getElementById('btn-sonido');
+  const sonidoTexto = document.getElementById('sonido-texto');
+  const dificultadDesc = document.getElementById('dificultad-desc');
+  const radiosDificultad = Array.from(document.querySelectorAll('input[name="dificultad"]'));
+
+  /* ---------- Estado interno (fuente de la verdad) ---------- */
+  const estado = {
+    tablero: crearTablero(),
+    turno: HUMANO,
+    fase: 'jugando',          // 'jugando' | 'fin'
+    dificultad: 'normal',
+    marcador: { x: 0, empates: 0, o: 0 },
+    sonido: true
+  };
+
+  let temporizadorIA = null;
+  let idRonda = 0;
+  let contextoAudio = null;
+
+  /* ---------- Persistencia (opcional, nunca rompe el juego) ---------- */
+  function cargarPreferencias() {
+    try {
+      const crudo = window.localStorage.getItem(CLAVE_ALMACEN);
+      if (!crudo) return;
+
+      const datos = JSON.parse(crudo);
+      const marcador = datos && datos.marcador;
+
+      if (marcador && [marcador.x, marcador.empates, marcador.o]
+        .every((valor) => Number.isInteger(valor) && valor >= 0)) {
+        estado.marcador = { x: marcador.x, empates: marcador.empates, o: marcador.o };
+      }
+      if (datos && typeof datos.sonido === 'boolean') {
+        estado.sonido = datos.sonido;
+      }
+    } catch (error) {
+      /* localStorage bloqueado (file://, modo privado…): seguimos en memoria. */
+    }
+  }
+
+  function guardarPreferencias() {
+    try {
+      window.localStorage.setItem(CLAVE_ALMACEN, JSON.stringify({
+        marcador: estado.marcador,
+        sonido: estado.sonido
+      }));
+    } catch (error) {
+      /* Sin persistencia disponible: no es un fallo del juego. */
+    }
+  }
+
+  /* ---------- Sonido ---------- */
+  function obtenerContextoAudio() {
+    if (!estado.sonido) return null;
+
+    const Constructor = window.AudioContext || window.webkitAudioContext;
+    if (!Constructor) return null;
+
+    try {
+      if (!contextoAudio) contextoAudio = new Constructor();
+      if (contextoAudio.state === 'suspended') {
+        contextoAudio.resume().catch(() => {});
+      }
+      return contextoAudio;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function sonar(nombre) {
+    const notas = SONIDOS[nombre];
+    if (!notas) return;
+
+    const contexto = obtenerContextoAudio();
+    if (!contexto) return;
+
+    try {
+      const inicio = contexto.currentTime + 0.02;
+      for (const nota of notas) {
+        const oscilador = contexto.createOscillator();
+        const ganancia = contexto.createGain();
+        const t0 = inicio + nota.t;
+
+        oscilador.type = 'sine';
+        oscilador.frequency.setValueAtTime(nota.f, t0);
+        ganancia.gain.setValueAtTime(0.0001, t0);
+        ganancia.gain.exponentialRampToValueAtTime(nota.v, t0 + 0.012);
+        ganancia.gain.exponentialRampToValueAtTime(0.0001, t0 + nota.d);
+
+        oscilador.connect(ganancia);
+        ganancia.connect(contexto.destination);
+        oscilador.start(t0);
+        oscilador.stop(t0 + nota.d + 0.03);
+      }
+    } catch (error) {
+      /* El audio es decorativo: cualquier fallo se ignora. */
+    }
+  }
+
+  /* ---------- Render ---------- */
+  function pintarCasilla(indice) {
+    const celda = celdas[indice];
+    if (!celda) return;
+
+    const ficha = estado.tablero[indice];
+    const valor = ficha || '';
+
+    if (celda.dataset.ficha !== valor) {
+      celda.innerHTML = ficha === HUMANO ? SVGS.X : (ficha === IA ? SVGS.O : '');
+      celda.dataset.ficha = valor;
+    }
+
+    celda.classList.toggle('ocupada', ficha !== null);
+    celda.setAttribute(
+      'aria-label',
+      ficha === null
+        ? 'Casilla ' + (indice + 1) + ', vacía'
+        : 'Casilla ' + (indice + 1) + ', ficha ' + ficha
+    );
+  }
+
+  function pintarTodoElTablero() {
+    for (let i = 0; i < celdas.length; i += 1) {
+      pintarCasilla(i);
+    }
+  }
+
+  function pintarMarcador() {
+    marcadorEls.x.textContent = String(estado.marcador.x);
+    marcadorEls.empates.textContent = String(estado.marcador.empates);
+    marcadorEls.o.textContent = String(estado.marcador.o);
+  }
+
+  function animarPunto(elemento) {
+    elemento.classList.remove('rebote');
+    // Fuerza reinicio de la animación sin usar timers.
+    void elemento.offsetWidth;
+    elemento.classList.add('rebote');
+  }
+
+  function mostrarEstado(texto, tipo) {
+    estadoTexto.textContent = texto;
+    estadoEl.dataset.estado = tipo;
+  }
+
+  function actualizarEstadoTurno() {
+    if (estado.fase !== 'jugando') return;
+
+    if (estado.turno === HUMANO) {
+      mostrarEstado('Tu turno (X)', 'turno');
+    } else {
+      mostrarEstado('Pensando IA (O)…', 'pensando');
+    }
+  }
+
+  /**
+   * Bloqueo estricto: el tablero solo acepta clics en el turno del humano,
+   * con la partida en curso y sobre celdas vacías.
+   */
+  function actualizarBloqueo() {
+    const bloqueado = estado.fase !== 'jugando' || estado.turno !== HUMANO;
+
+    tableroEl.dataset.bloqueado = String(bloqueado);
+    tableroEl.setAttribute('aria-busy', String(estado.fase === 'jugando' && estado.turno === IA));
+
+    for (let i = 0; i < celdas.length; i += 1) {
+      celdas[i].disabled = bloqueado || estado.tablero[i] !== null;
+    }
+  }
+
+  function actualizarDescripcionDificultad() {
+    dificultadDesc.textContent = TEXTOS_DIFICULTAD[estado.dificultad] || '';
+  }
+
+  function actualizarBotonSonido() {
+    btnSonido.setAttribute('aria-pressed', String(estado.sonido));
+    btnSonido.title = estado.sonido ? 'Silenciar sonidos' : 'Activar sonidos';
+    sonidoTexto.textContent = estado.sonido ? 'Sonido' : 'Silencio';
+  }
+
+  /* ---------- Fin de partida ---------- */
+  function finalizarPartida(lineaGanadora, ganador) {
+    estado.fase = 'fin';
+    estado.turno = null;
+
+    if (temporizadorIA !== null) {
+      clearTimeout(temporizadorIA);
+      temporizadorIA = null;
+    }
+
+    if (lineaGanadora) {
+      for (const indice of lineaGanadora) {
+        celdas[indice].classList.add('ganadora');
+      }
+      tableroEl.classList.add('con-ganador');
+      tableroEl.dataset.resultado = ganador === HUMANO ? 'victoria' : 'derrota';
+
+      if (ganador === HUMANO) {
+        estado.marcador.x += 1;
+        animarPunto(marcadorEls.x);
+        mostrarEstado('¡Ganaste! Ronda para ti (X)', 'victoria');
+        sonar('victoria');
+      } else {
+        estado.marcador.o += 1;
+        animarPunto(marcadorEls.o);
+        mostrarEstado('La IA gana la ronda (O)', 'derrota');
+        sonar('derrota');
+      }
+    } else {
+      estado.marcador.empates += 1;
+      tableroEl.dataset.resultado = 'empate';
+      animarPunto(marcadorEls.empates);
+      mostrarEstado('Empate: nadie suma esta ronda', 'empate');
+      sonar('empate');
+    }
+
+    pintarMarcador();
+    guardarPreferencias();
+    actualizarBloqueo();
+  }
+
+  /* ---------- Jugadas ---------- */
+  function realizarJugada(indice, ficha) {
+    estado.tablero[indice] = ficha;
+    pintarCasilla(indice);
+    sonar(ficha === HUMANO ? 'x' : 'o');
+
+    const linea = obtenerLineaGanadora(estado.tablero);
+
+    // La victoria se comprueba antes que el empate: la 9.ª ficha puede ganar.
+    if (linea) {
+      finalizarPartida(linea, ficha);
+      return;
+    }
+    if (tableroCompleto(estado.tablero)) {
+      finalizarPartida(null, null);
+      return;
+    }
+
+    estado.turno = ficha === HUMANO ? IA : HUMANO;
+    actualizarEstadoTurno();
+    actualizarBloqueo();
+  }
+
+  function puedeJugarHumano(indice) {
+    return Number.isInteger(indice) &&
+      estado.fase === 'jugando' &&
+      estado.turno === HUMANO &&
+      estado.tablero[indice] === null;
+  }
+
+  function programarJugadaIA() {
+    if (temporizadorIA !== null) {
+      clearTimeout(temporizadorIA);
+      temporizadorIA = null;
+    }
+
+    const rondaActual = idRonda;
+    const retardo = RETARDO_MIN_IA + Math.round(Math.random() * (RETARDO_MAX_IA - RETARDO_MIN_IA));
+
+    temporizadorIA = window.setTimeout(function () {
+      temporizadorIA = null;
+
+      // La ronda o el estado han cambiado mientras la IA "pensaba": se descarta.
+      if (rondaActual !== idRonda || estado.fase !== 'jugando' || estado.turno !== IA) return;
+
+      const jugada = elegirJugada(estado.tablero, estado.dificultad, IA, HUMANO);
+      if (!Number.isInteger(jugada) || estado.tablero[jugada] !== null) return;
+
+      realizarJugada(jugada, IA);
+    }, retardo);
+  }
+
+  function iniciarTurnoIA() {
+    if (estado.fase !== 'jugando') return;
+
+    estado.turno = IA;
+    actualizarEstadoTurno();
+    actualizarBloqueo();
+    programarJugadaIA();
+  }
+
+  function alPulsarCasilla(evento) {
+    const indice = Number(evento.currentTarget.dataset.i);
+    if (!puedeJugarHumano(indice)) return;
+
+    realizarJugada(indice, HUMANO);
+
+    if (estado.fase === 'jugando' && estado.turno === IA) {
+      iniciarTurnoIA();
+    }
+  }
+
+  /* ---------- Reinicios ---------- */
+  function iniciarPartida(conSonido) {
+    idRonda += 1;
+
+    if (temporizadorIA !== null) {
+      clearTimeout(temporizadorIA);
+      temporizadorIA = null;
+    }
+
+    estado.tablero = crearTablero();
+    estado.turno = HUMANO;
+    estado.fase = 'jugando';
+
+    tableroEl.classList.remove('con-ganador');
+    delete tableroEl.dataset.resultado;
+
+    for (const celda of celdas) {
+      celda.classList.remove('ganadora');
+    }
+
+    pintarTodoElTablero();
+    actualizarEstadoTurno();
+    actualizarBloqueo();
+
+    if (conSonido) sonar('reinicio');
+  }
+
+  function reiniciarMarcador() {
+    estado.marcador = { x: 0, empates: 0, o: 0 };
+    pintarMarcador();
+    guardarPreferencias();
+    animarPunto(marcadorEls.x);
+    animarPunto(marcadorEls.empates);
+    animarPunto(marcadorEls.o);
+    sonar('interfaz');
+    // No se toca el estado de la partida: si la ronda sigue, se mantiene el turno;
+    // si ya terminó, el mensaje con el resultado permanece visible.
+    if (estado.fase === 'jugando') actualizarEstadoTurno();
+  }
+
+  function cambiarDificultad(nivel) {
+    if (!Object.prototype.hasOwnProperty.call(TEXTOS_DIFICULTAD, nivel)) return;
+
+    const cambio = estado.dificultad !== nivel;
+    estado.dificultad = nivel;
+    actualizarDescripcionDificultad();
+
+    if (!cambio) return;
+
+    // Si la IA estaba pensando, se reprograma con la nueva dificultad:
+    // se aplica de inmediato sin dejar dos movimientos pendientes.
+    if (estado.fase === 'jugando' && estado.turno === IA) {
+      programarJugadaIA();
+    }
+    sonar('interfaz');
+  }
+
+  /* ---------- Eventos ---------- */
+  for (const celda of celdas) {
+    celda.addEventListener('click', alPulsarCasilla);
+  }
+
+  for (const radio of radiosDificultad) {
+    radio.addEventListener('change', function () {
+      if (radio.checked) cambiarDificultad(radio.value);
+    });
+  }
+
+  btnNueva.addEventListener('click', function () {
+    iniciarPartida(true);
+  });
+
+  btnMarcador.addEventListener('click', reiniciarMarcador);
+
+  btnSonido.addEventListener('click', function () {
+    estado.sonido = !estado.sonido;
+    actualizarBotonSonido();
+    guardarPreferencias();
+    if (estado.sonido) sonar('interfaz');
+  });
+
+  // Salvaguarda extra: evita el menú contextual por pulsación larga en móvil.
+  tableroEl.addEventListener('contextmenu', function (evento) {
+    if (evento.target.closest('.casilla')) evento.preventDefault();
+  });
+
+  /* ---------- Arranque ---------- */
+  cargarPreferencias();
+  pintarMarcador();
+  actualizarBotonSonido();
+  actualizarDescripcionDificultad();
+  iniciarPartida(false);
+}());
+</script>
+
+</body>
+</html>
